@@ -12,7 +12,7 @@
 8. `clear()`方法简单的把所有slot都置空，只是一次遍历`table`的耗时
 
 ### 必要的知识
-`Node`类：链表使用
+`Node`类：链表使用，也是桶的类型
 ```java
 static class Node<K, V> ... {
     /**
