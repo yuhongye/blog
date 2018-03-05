@@ -54,10 +54,9 @@ __推论__: 桶中slot i中的node，经过rehash后，要么继续在slot i中�
 
 __证明__:
 
-    1. 桶原来的大小oldCap是2的幂，假设oldCap = 2^k， node确定所属slot的算法：node.hash & (oldCap - 1), 也就是node.hash的最低k位的值;
+1. 桶原来的大小oldCap是2的幂，假设oldCap = 2^k， node确定所属slot的算法：node.hash & (oldCap - 1), 也就是node.hash的最低k位的值;
+2. newCap = 2^(k+1), 决定node所属slot变成了node.hash中低(k+1)位的值；现在就分成了两种情况：
 
-    2. newCap = 2^(k+1), 决定node所属slot变成了node.hash中低(k+1)位的值；现在就分成了两种情况：
-    
         - node.hash的第(k+1)位为0, 也就是(node.hash & oldCap) == 0，那么它会在原来的slot
         - node.hash的第(k+1)位为1, 它的slot就变成了: 2^k(第k+1位为1表示的值) + 低k位的值，也就是: oldCap + i, i是该node在rehash之前所处的slot
 
