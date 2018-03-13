@@ -9,13 +9,13 @@
 ### 1.2 JVM Stacks Per Thread
 创建线程时会同步的创建该线程__私有__的JVM Stack，Stack里面保存的是frames。Stack的作用：保存局部变量，临时结果等，并且对Stack的操作只有push(frame)和pop(),因此frames可以在堆上分配。Stack的内存不要求连续，并且可以是固定大小或者动态分配。
 
-frame如果翻译成中文可以叫方法帧，每当一个方法被调用时，就会创建它的frame，push to stack；当该方法结束时（包括正常执行结束和异常)，它的frame会被销毁，pop from stack。thread在同一时刻只能执行一个方法中的代码，当前执行方法的frame在栈顶，因此栈顶的frame叫current frame,对应的方法叫current method。
+frame如果翻译成中文可以叫方法帧，每当一个方法被调用时，就会创建它的frame，push to stack；当该方法结束时（包括正常执行结束和异常)，它的frame会被销毁，pop from stack。thread在同一时刻只能执行一个方法中的代码，当前执行方法的frame在栈顶，因此栈顶的frame叫current frame,对应的方法叫current method。
 
 frame的大小在编译期就可以确定，其保存如下内容: 
 
 * local variable array
 * operand stack(操作数栈)
-* 当前method所属class的run-time constant pool
+* 当前method所属class的run-time constant pool
 
 #### local variable array，编译期可以确定大小
 ```java
@@ -31,7 +31,7 @@ frame的大小在编译期就可以确定，其保存如下内容:
 | slotn |
 ---------
 ```
-一个slot可以存放`boolean, byte, char, short, int, float, reference, returnAddress`类型的数据，但是`long, double`需要两个slot。
+一个slot可以存放`boolean, byte, char, short, int, float, reference, returnAddress`类型的数据，但是`long, double`需要两个slot。
 
 如果是实例方法，slot0用来存储`this`，从slot1开始存储方法的参数，和其他临时变量。对于static方法，从slot0开始存储方法的参数，和其他临时变量。
 
@@ -87,13 +87,13 @@ frame的大小在编译期就可以确定，其保存如下内容:
 ------
 | .. |
 ------
-```v
-必须使用正确的指令来操作栈中的元素，比如栈中保存的是两个`int`，那么`ladd`就不行。有一小部分JVM指令(如dup何swap)不关心操作数的类型，把所有运行时数据区中的数据当做raw type来操作。JVM对这些指令的限制：不可以用来修改数据，也不可以拆散那些原本不可拆分的数据；这些限制通过class文件的校验过程来强制保证。
+```
+必须使用正确的指令来操作栈中的元素，比如栈中保存的是两个`int`，那么`ladd`就不行。有一小部分JVM指令(如dup何swap)不关心操作数的类型，把所有运行时数据区中的数据当做raw type来操作。JVM对这些指令的限制：不可以用来修改数据，也不可以拆散那些原本不可拆分的数据；这些限制通过class文件的校验过程来强制保证。
 
 每次push或者pop操作的是一个entry，一个entry可以放下所有的数据类型，包括`long, double`。栈的深度是它包含的unit个数，`long, double`需要使用两个unit，其他类型使用一个unit。
 
 #### Dynamic Linking
-截止到Jdk 8，Java依然只有动态链接。每个frame包含一个指向该方法所属类的run-time constant pool 用来支持动态链接。在class文件里，一个方法调用其他方法或者访问其他变量都是通过symbolic reference来表示。动态链接就是把方法的符号引用转换成对方法的直接引用，把对变量的访问变成对运行时storage offset的访问，如果遇到as-yet-undefined sysbols，那就需要加载对应的class。
+截止到Jdk 8，Java依然只有动态链接。每个frame包含一个指向该方法所属类的run-time constant pool 用来支持动态链接。在class文件里，一个方法调用其他方法或者访问其他变量都是通过symbolic reference来表示。动态链接就是把方法的符号引用转换成对方法的直接引用，把对变量的访问变成对运行时storage offset的访问，如果遇到as-yet-undefined sysbols，那就需要加载对应的class。
 
 
 ### 1.3 Heap JVM级别
