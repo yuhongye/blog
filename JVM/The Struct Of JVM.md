@@ -108,3 +108,5 @@ run-time contant pool is a per-class or per-interface run-time representation of
 
 ### 1.5 Native Method Stacks
 本地方法栈就是通常所说的C栈，用来支持native方法，通常也是Thread级别的。
+
+# 2 JVM Architecture
