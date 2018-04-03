@@ -1,3 +1,6 @@
+JDK提供了几种`Map`实现，这里记录各种实现的一些要点。
+
+# 1. HashMap
 网上关于`HashMap`源码解读的已经很多了，这里只记录源码阅读中一些重要的点，仅供个人阅读。
 
 ### 初读重点
@@ -102,3 +105,23 @@ __证明__:
     * `table = new Node[threshold]`
     * `threshold = table.length * loadFacto`
 
+# 2. LinkedHashMap extends HashMap
+在`HashMap`的基础上又维护了一个double-linked list来保持顺序：
+
+* 插入顺序，遍历时得到的是插入顺序
+* 访问顺序，每次访问时都会把当前entry放到队列尾部（最新的)
+
+提供了一个方法`protected boolean removeEldestEntry(Map.Entry<K, V> eldes)`，默认返回`false`，子类可以返回`true`来删除最老元素的目的，配合访问顺序，Map可以作为一个LRU Cache。
+```java
+// 元素个数上限，超过删除最老的
+private int maxSize;
+/**
+ * 删除最老的元素
+ */
+@Override
+protected boolean removeEldestEntry(Map.Entry<K, V> eldst) {
+    return size() > maxSize;
+}
+```
+
+# 3. TreeMap

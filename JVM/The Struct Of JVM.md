@@ -7,7 +7,7 @@
 线程当前执行的方法，如果不是native，那么pc中保存的就是正在执行的JVM指令的地址(or next ?)，如果是native方法，那么pc值是未定义的。
 
 ### 1.2 JVM Stacks Per Thread
-创建线程时会同步的创建该线程__私有__的JVM Stack，Stack里面保存的是frames。Stack的作用：保存局部变量，临时结果等，并且对Stack的操作只有push(frame)和pop(),因此frames可以在堆上分配。Stack的内存不要求连续，并且可以是固定大小或者动态分配。
+创建线程时会同步的创建该线程 __私有__ 的JVM Stack，Stack里面保存的是frames。Stack的作用：保存局部变量，临时结果等，并且对Stack的操作只有push(frame)和pop(),因此frames可以在堆上分配。Stack的内存不要求连续，并且可以是固定大小或者动态分配。
 
 frame如果翻译成中文可以叫方法帧，每当一个方法被调用时，就会创建它的frame，push to stack；当该方法结束时（包括正常执行结束和异常)，它的frame会被销毁，pop from stack。thread在同一时刻只能执行一个方法中的代码，当前执行方法的frame在栈顶，因此栈顶的frame叫current frame,对应的方法叫current method。
 
@@ -110,3 +110,4 @@ run-time contant pool is a per-class or per-interface run-time representation of
 本地方法栈就是通常所说的C栈，用来支持native方法，通常也是Thread级别的。
 
 # 2 JVM Architecture
+![Architecture](../images/JVM_Achitecture.png)

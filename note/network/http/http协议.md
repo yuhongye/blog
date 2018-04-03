@@ -49,9 +49,24 @@ Http/1.1中新增了持久连接功能：服务器在发送响应后保持该TCP
 * 如果使用非持久化连接，总共需要11个TCP连接，也就经历了11次上面的过程。注意：并不是说11个TCP连接是串行的，大部分浏览器默认支持5-10个并行TCP连接。
 * 如果使用持久化连接，则11个对象可以使用1个TCP连接传输完。 
 
+##### pipeline
+与持久连接相配套的技术：管线化，不必等待返回而持续的发送请求。
+```java
++------+                +------+
+|Client|   request1     |Server|
+|      | -------------> |      |
+|      |   request2     |      |
+|      | -------------> |      |
+|      |   response1    |      |
+|      | <------------  |      |
+|      |   response2    |      |
+|      | <------------  |      |
++------+                +------+
+```
+
 要足够重视TCP连接时间在整个请求响应时间的占比，可能会很大。参考《Web性能权威指南》第二章的论述。
 
-###2. Http请求: request line, header, empty line, request data
+### 2. Http请求: request line, header, empty line, request data
 ```java
             +----------+----+-----+----+---------+----+----+
 request line|  Method  | sp | URL | sp | Version | \r | \n |
@@ -93,7 +108,7 @@ Cookie: ad_t_3=1; ad_t_2=1; ad_t_side_fix_2=2; SUV=1710192016589445; vjuids=72a0
 * PUT 向指定URI上传其最新内容
 * DELETE 请求server删除Request-URI所标识的资源
 * TRACE 回显服务器收到的请求，主要用于调试
-* OPTIONS server传回该资源所支持的所有HTTP请求方法
+* OPTIONS server传回该资源所支持· 的所有HTTP请求方法
 
 ### 3. Http Response
 ```java
@@ -134,3 +149,23 @@ FSS-Proxy: Powered by 2122607.2909049.2800763
 * 3xx重定向: 需要后续操作才能完成这一请求，例外: 304表示资源没有更改
 * 4xx请求错误
 * 5xx服务器错误
+
+### 4. Cookie
+Http是无状态协议，它不对之前发生的请求和响应状态做管理。Cookie交互示意：
+```java
+1. 第一次，请求时无Cookie
++------+                  +------+
+|Client|                  |Server|
++------+  (1)发出请求      +------+
+          ------------->  生成cookie
+          (2) Set Cookie
+保存Cookie <------------
+
+2. 之后的请求，把Cookie带上
++------+                  +------+
+|Client|                  |Server|
++------+  (3)请求，Cookie  +------+
+          ------------->  根据cookie做出响应
+          (4) 响应
+
+```
