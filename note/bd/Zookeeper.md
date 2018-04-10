@@ -18,6 +18,7 @@ Zookeeper提供了一小部分调用方法组成的类文件系统api。
 +------------+   +----------+    +---------+   +------+
 ```
 会话过期：server才可以申明会话过期，比如client与server因超时而断开连接，client保持Connecting状态；client因网络分区与server断开连接，client依然保持Connecting状态。client只能从server处知悉会话已经过期，不过它可以主动关闭会话。
+
 会话超时时间t: 在server端如果经过t时间没有收到会话的任何消息，则生命会话过期；在client端，经过t/3时间未收到消息，向server发送心跳，经过2t/3后，client开始寻找其他服务器进行连接。
 
 `zkServer.sh start -foreground`这个命令提供了大量的详细信息输出。
