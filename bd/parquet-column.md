@@ -59,7 +59,7 @@ public class GroupWriter {
 |  for each field                                                       |
 |      RecordConsumer.startField()                                      |
 |      if primitive type then Group.writeValue(field, RecordConsumer);  |
-|      if group type     then recursive group type, write its chidlren  |
+|      if group type     then recursive group type, write its children  |
 |      RecordConsumer.endField()                                        |
 |  RecordConsumer.endMessage();                                         |
 +-----------------------------------------------------------------------+
@@ -76,3 +76,5 @@ public class GroupWriter {
 | RecordConsumer.addXXX(value)|  --> | ColumnWriter.write(value, repeatition, definition)|
 +-----------------------------+      +---------------------------------------------------+
 ```
+
+# 怎么计算definition level和repetition level
