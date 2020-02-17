@@ -1,3 +1,5 @@
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
+
 这是对google的《HyperLogLog in Practice: Algorithm ENgineering of a State of The Art Candinality Estimation Algorithm》的阅读笔记. 首先会介绍LinearCounting和HyperLogLog算法，然后是对论文中各章节的总结.
 
 #0.LinearCounting, LogLogCount  and HyperLogLog
