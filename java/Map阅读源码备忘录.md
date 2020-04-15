@@ -103,9 +103,12 @@ __证明__:
 `threshold`的作用：当map size > threshold时，resize。`threshold = (table.length or default initial capacity) * loadFactor`，在看代码时有一个迷惑人的地方：`new HashMap(intialCapacity...)`时使用了`threshold`来保存initialCapacity。因此当第一次出入entry时，`table` is null, 首先需要resize:
 
     * `table = new Node[threshold]`
-    * `threshold = table.length * loadFacto`
+    * `threshold = table.length * loadFactor`
+
+因此threshold = table.length * loadFactor，只是HashMap做了一个优化：只有第一次put时才会init table。因此，如果提前知道要插入的元素大小是s，那么initialCapacity = s / loadFactor，只有这样才不会rehash。
 
 # 2. LinkedHashMap extends HashMap
+
 在`HashMap`的基础上又维护了一个double-linked list来保持顺序：
 
 * 插入顺序，遍历时得到的是插入顺序

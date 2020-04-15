@@ -8,7 +8,7 @@
 
 其空间复杂度为O(Nmax)，大约是使用bitmap的十分之一，该算法的空间复杂度较高，但在元素数据较少的时候表现优异，用来弥补HyperLogLog在元素数较少时预估偏大的缺陷。
 
-### 0.2 LogLogCounting, 空间复杂度O(log2(log2(N))))
+### 0.2 LogLogCounting, 空间复杂度O(log(log(N))))
 
 LogLogCounting空间复杂度为O(log2(log2(N)))), 使得通过KB级内存预估数亿级别的基数成为可能，目前在处理大数据时基数计算问题时，所采用的算法基本是LLC或其变种。
 

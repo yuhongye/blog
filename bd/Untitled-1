@@ -1,8 +1,0 @@
-def calculate(loc: Dataset[Row], other: Dataset[Row]): Unit = {
-     var count = other.count
-     var joined = loc.join(other, "cuid").count
-     println(count)
-     println(joined)
-     println(joined / (count * 1.0))
-     println(joined / 290862580.0)
-    }
