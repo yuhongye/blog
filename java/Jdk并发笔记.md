@@ -1,4 +1,26 @@
-### 1. ThreadLocal
+# java并发基础知识
+
+#### 0. 教训
+
+1. 应该调用带超时参数的方法，这样能给你一个机会去检查状态；自己写的并发结构也应该提供带超时参数的版本
+
+   
+
+#### 1. Thread
+
+##### join
+
+`Thread.join()`底层使用`wait()`方法实现，当Thread终止时会调用`notifyAll()`方法唤醒所有等待的线程。
+
+##### sleep
+
+`static sleep(millis)`方法使当前线程休眠指定的时间，在此期间，对于已经获得monitors不会丢失，其他尝试获取这些monitors的线程必须等待，这个有点坑
+
+##### Thread.State 它定义的Runnable状态实际上包含了Running和Ready两种状态, 可以通过MangementFactory.getThreadMxBean来获取Thread Dump
+
+
+
+#### 2. ThreadLocal
 
 每个线程都有一个该变量的值，一般情况下它应该是一个类的static字段。用两句话来概括ThreadLocal的实现要点：
 
@@ -9,7 +31,7 @@
 
 # Concurrent Collections
 
-###  ArrayBlockingQueue
+#### ArrayBlockingQueue
 
 底层使用数组实现的循环有界队列，它的实现要点是使用一把锁生成两个condition，一个是notEmptyCondition, 一个是notFullCondition：
 
@@ -34,9 +56,7 @@ try {
 
 这个类的问题在于锁争用比较高，put和get都使用同一把锁，一个可能的优化方向是使用两把锁来减少锁争用，但是两把锁之间的condition如何唤醒是一个问题。
 
-
-
-### Lock
+#### Lock
 
 Lock会保证`lock()`和`unlock()`之间临界区对共享内存变量的操作对其他线程可见，先看一条happens-before原则:
 

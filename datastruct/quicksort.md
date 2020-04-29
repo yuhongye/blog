@@ -65,11 +65,14 @@ void qsort(int[] A, int left, int right) {
     int l = left;
     int h = right - 1;
 
-    while (l < h) {
+   // 重要的是: 每次循环都会使i和j至少前进一个位置
+    while (true) {
         while (A[++l] < pivot);
         while (A[--h] > pivot);
         if (l < h) {
             swap(A, l, h);
+        } else {
+          break;
         }
     }
     
@@ -79,7 +82,7 @@ void qsort(int[] A, int left, int right) {
      *  - h指向一个<=pivot的元素
      */
      swap(A, l, right - 1);
-     
+     // 交换完后，l就是枢纽元争取的位置
      qsort(A, left, l - 1);
      qsort(A, l + 1, right);
 }
@@ -160,7 +163,7 @@ a: 指向第一个小于pivot的元素，它之前的位置全是等于枢纽元
 b: 左侧待排序元素
 c: 右侧待排序元素
 d: 指向第一个大于pivot的元素，它之后的位置全市等于枢纽元的元素
-``` 
+```
 一趟划分之后，得到如下的结果：
 ```java
 ------------------------------------------
