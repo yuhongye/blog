@@ -1,4 +1,4 @@
-### B-tree的特性
+### 0. B-tree的特性
 
 #### 算法导论中的定义
 
@@ -22,7 +22,7 @@
 
 通常b-tree的度比较大，尽量使一个节点占用一个disk page，这样树的高度比较低，在查找时可以减少io次数。
 
-### 插入：对根节点地分裂是增加b-tree高度的唯一途径
+### 1. 插入：对根节点地分裂是增加b-tree高度的唯一途径
 
 一个节点有2t-1个键时成为满节点，如果向一个满节点插入数据则会违背b-tree的性质，因此需要分裂，而分裂也只会发生在满节点上。具体看下分裂的过程，假设满节点c，父节点是p：
 
@@ -32,9 +32,9 @@
 
 因此对一个值的插入就可能变成两次遍历：第一次找到要插入的节点；第二次如果待插入的节点满了，则需要分裂，这个分裂又可能会一直向上回溯到根节点。为了规避这个问题，在遍历的过程中如果发现节点已经满了，则直接分裂，__这样当分裂一个节点c的时候，可以保证它的父节点p一定不是满的，就不用向上回溯了__。
 
-#### 分裂伪代码
+#### 1.1 分裂伪代码
 
-#### ![B-tree split](../images/b-tree-split.png)
+![B-tree split](../images/b-tree-split.png)
 
 ```java
 // c表示要分裂的节点，p是父节点，i是c在p中的下标
@@ -60,5 +60,43 @@ split(c, p, i) {
 }
 ```
 
+##### 1.2 插入伪代码： 如果根节点满了，需要分裂根节点，先申请一个新节点作为根节点的父节点。b-tree高度的增加是在树的顶部而不是底部
 
+```java
+insert(root, key) {
+  // root节点满了
+  if (root.n = 2t-1) {
+    // 申请一个新节点作为新的根节点
+    new_root = allocate node();
+    new_root.isLeaf = false;
+    new_root.n = 0;
+    new_root.children[0] = root;
+    
+    // 分裂根节点，增加树的高度
+    split(root, new_root, 0);
+    root = new_root;
+  }
+  
+  insertNotFull(root, key);
+}
+
+insertNotFull(node, key) {
+  // 数据会插入到这里，并且node is not full
+  if (node.isLeaf) {
+    find position and insert;
+    return;
+  }
+  
+  i = binarySerachByKey(node.keys, key);
+  child = node.chilren[i];
+  // 如果在插入路径上的节点已经满了，先分裂
+  if (child is full) {
+    split(child, node, i);
+    // child代表前半部分key， next代表后半部分key，需要跟中间的m比较，看看key在哪一部分
+    if (key > node.keys[i]) {
+      child = node.children[i+1];
+    }
+  }
+}
+```
 
