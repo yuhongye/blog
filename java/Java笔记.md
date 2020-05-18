@@ -21,3 +21,13 @@ boolean isTrue = ("hel" + lo).intern == ("hel" + lo).intern();
 ##### String Deduplication in G1
 
 接着上条说，系统中存在着大量的String对象，它们底层的数据是一样的，因此造成了巨大的浪费.G1的开发者就希望能把这些相等的对象给去重，大体上就是把String对象底层依赖的`char[]`在jvm层面给替换成同一个，这样虽然String对象没有去重，但是占用内存的大头也就是String的内容是去重了的.
+
+#### 引用
+
+Reference是程序跟gc交互的一种受限方式，gc在遍历到一个对象时，如果发现它仅有Reference的子类指向它，这个时候就可以对它做一些操作：
+
+* 软引用，在内存空间足够的时候不会回收，但是会保证在OOM之前把它回收掉
+* 弱引用，遇到就回收
+* 虚引用，太弱了，它的get()方法始终返回null
+
+当gc把引用的object set to null后，会把这样引用放到关联的`ReferenceQueue`中，这样就给我们一个机会：感知到某个对象已经被gc回收了。但是Reference对象本身是强引用。

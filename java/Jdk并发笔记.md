@@ -16,6 +16,8 @@
 
 `static sleep(millis)`方法使当前线程休眠指定的时间，在此期间，对于已经获得monitors不会丢失，其他尝试获取这些monitors的线程必须等待，这个有点坑
 
+##### interrupt: 状态如何设置，什么情况下会收到异常，状态又是否被清理？
+
 ##### Thread.State 它定义的Runnable状态实际上包含了Running和Ready两种状态, 可以通过MangementFactory.getThreadMxBean来获取Thread Dump
 
 
@@ -24,7 +26,7 @@
 
 每个线程都有一个该变量的值，一般情况下它应该是一个类的static字段。用两句话来概括ThreadLocal的实现要点：
 
-1. 每个`Thread`类有一个`ThreadLocalMap`对象，它里面存储的是这个Thread的全部ThreadLocal值
+1. 每个`Thread`类有一个`ThreadLocalMap`对象，它里面存储的是这个Thread的全部ThreadLocal值, map中的key就是每个ThreadLocal对象,value是要set的value
 2. 每次`get` 先调用`Thread.getThreadLocalMap`，然后在`ThreadLocalMap`中在获取当前ThreadLocal变量的值
 
 因此在实现ThreadLocalMap时都不需要同步，因为它只会被一个线程操作。值得注意的一点是：ThreadLocalMap中的Entry是weak reference，当线程dead之后，会被清理掉，也就是ThreadLocal的值不用显式的remove。
@@ -55,6 +57,68 @@ try {
 ```
 
 这个类的问题在于锁争用比较高，put和get都使用同一把锁，一个可能的优化方向是使用两把锁来减少锁争用，但是两把锁之间的condition如何唤醒是一个问题。
+
+#### LinkedBlockingQueue：吞吐量略高
+
+实现要点：使用了put lock和take lock来减少锁争用，解决了上面ArrayBlockingQueue中的问题.
+
+##### 构造方法中的可见性问题，在单线程中入队，为什么有可见性问题?
+
+```java
+    public LinkedBlockingQueue(Collection<? extends E> c) {
+        this(Integer.MAX_VALUE);
+        final ReentrantLock putLock = this.putLock;
+        putLock.lock(); // Never contended, but necessary for visibility
+        try {
+            int n = 0;
+            for (E e : c) {
+               	last = last.next = new Node<E>(e);
+                ++n;
+            }
+            count.set(n);
+        } finally {
+            putLock.unlock();
+        }
+    }
+```
+
+##### 使用两把锁互相唤醒的要点：两把锁分开获取
+
+```java
+public void put(E e) {
+  Node<E> node = new Node<>(e);
+  putLock.lockInterruptibly();
+  try {
+    // 必须在while循环中，可能被唤醒时，别的线程又put了导致队列满
+    while (count.get() == capacity) {
+      notFull.await();
+    }
+    last = last.next = node;
+    c = count.getAndIncrement();
+   	/**
+   	 * 如果此时c==0,那么可能之前有take thread被hold住了，而我们又插入了一个，因此可以唤醒
+   	 * 如果c > 0，说明在我们插入之前queue is not empty，在我们插入的时候没有take thread被hold
+   	 */
+    
+    // put唤醒put，因为这个时候还持有锁，所以c不可能增加，如果if条件成立那么就可以唤醒线程
+    if (c+1 < capacity) {
+      notFull.signal();
+    }
+  } finally {
+    putLock.unLock();
+  }
+  if (c == 0) {
+    takeLock.lock();
+    try {
+      notEmpty.signal();
+    } finally {
+      takeLock.unlock();
+    }
+  }
+}
+```
+
+
 
 #### Lock
 
