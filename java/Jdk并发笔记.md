@@ -120,6 +120,12 @@ public void put(E e) {
 
 
 
+### jdk concurrent.locks
+
+#### AQS
+
+参考这篇文章: https://www.cnblogs.com/waterystone/p/4920797.html
+
 #### Lock
 
 Lock会保证`lock()`和`unlock()`之间临界区对共享内存变量的操作对其他线程可见，先看一条happens-before原则:
@@ -127,3 +133,51 @@ Lock会保证`lock()`和`unlock()`之间临界区对共享内存变量的操作�
 * 如果线程1写入了volatile变量v，接着线程2读取了v，那么线程1写入v及之前的写操作都对线程2可见；volatile的实现可以从两个角度来理解：一是内存屏障，禁止指令重排序；而是volatile变量的写操作会紧跟一个汇编指令LOCK，它的作用是把缓冲区内所有的数据都刷到内存中，是所有的数据，不仅仅是volatile变量。
 
 Lock的实现中依赖了AQS，它内部涉及到对volatile变量的改变，因此它保证了可见性。
+
+
+
+#### Semaphore
+
+底层使用AQS，支持公平和非公平的获取。__在release()时不要求之前调用过acquire()，也就是release是任意的__
+
+```java
+Semaphore semaphore = new Semaphore(1);
+semaphore.release(9); // now semaphore has 10 permits
+```
+
+
+
+#### ConcurrentHashMap
+
+##### Java7版本中的ConcurrentHashMap
+
+主要思想：分段锁来分离写竞争，整个ConcurrentHashMap被分成2部分：Segments，每个Segments是一个HashMap，这样每次写操作只需要锁住一个Segments。
+
+更主要的优化：读不加锁，利用了不变性。下面是它的entry
+
+```java
+static final class HashEntry<K,V> { 
+       final K key;                       // 声明 key 为 final 型
+       final int hash;                   // 声明 hash 值为 final 型 
+       volatile V value;                 // 声明 value 为 volatile 型
+       final HashEntry<K,V> next;      // 声明 next 为 final 型 
+}
+```
+
+其中需要注意的是`next`是final的，这意味着不能在链表尾部插入，而且一旦插入后，此节点及之后的节点都不会再改变了。当执行remove操作时，找到entry的位置，此entry之前的所有节点重新构造一遍，生成一个新的链表。
+
+##### Java8中的ConcurrentHashMap
+
+Java 7中的实现存在一个问题：限制了最大并发数就是Segments的个数，而且整个结构也不够简洁。在Java8的实现中有两个目标：
+
+1. 保证并发读取的同时降低写入操作的竞争
+2. 尽量减小空间占用，至少向HashMap看齐
+
+在不考虑扩容的情况下，ConcurrentHashMap的细粒度锁应该在桶级别，而不是Table或者Segment级别。如果两个写入操作在两个桶中，那它们完全可以并行去做，只有在同一个桶的时候才需要加锁，而且是加载桶中第一个节点上面，因此插入操作可以总结如下：
+
+1. 如果桶是空的，尝试使用CAS把节点插入到队头，成功则返回，正常情况下桶里的元素应该应该是0或者1
+2. 如果桶不空了，那就锁住队头节点，链表采用尾插法，红黑树正常插入
+
+实现比较精妙的部分是rehash，在插入的时候如果处在rehash的状态，当前线程不是阻塞，而是去帮助rehash操作，大致思路是每个线程分管一部分桶，这样就把rehash也给并行了。
+
+读操作应该是完全并发的，即时在rehash的情况下也不阻塞它。ConcurrentHashMap的桶数是2的次幂，每次扩大一倍，这意味着一个节点在扩容的时候，它要么还在原来的slot上，要么在oldcapacity+slot位置上。据doug lea的注释中说，大概有1/6的entry需要重新构建，其他的可以复用。

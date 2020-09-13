@@ -157,7 +157,7 @@ V  V  V  V  V  V                             V  V  V  V  V  V
 ### 3. Parallel Compacting Collector: 相比Parallel Collector，老年代适用新的算法，最终会替代Parallel Collector
 新生代的收集与Parallel Collector相同。
 
-### 4. CMS
+### 4. CMS(废弃状态)
 不能作用在新生代，比并行收集器多占用10%-20%的堆空间，不压缩，如果没有足够的空间分配对象，执行一次串行full gc，会导致长时间暂停。
 
 以上collector都面临两个问题：
@@ -165,5 +165,5 @@ V  V  V  V  V  V                             V  V  V  V  V  V
 1. 垃圾收集需要扫描整个代空间
 2. 需要确定新生代和老年代的位置
 
-### 5. G1
+### 5. G1: 尽可能的保证暂停时间，同时达到高吞吐量
 新生代GC对整个新生代都执行collector，老年代只收集部分区域。
