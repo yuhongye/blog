@@ -6,7 +6,7 @@
    ![B-tree node](../images/b-tree-node.png)
 
 * n表示节点中存储的键的个数，键有序
-* $key_1, key_2…key_n$是其中的键，以升序存放
+* $key_1, key_2…key_n$ 是其中的键，以升序存放
 * is leaf表示节点是否为叶子节点
 * 节点包含n+1个子节点
 * data 键对应的值，通常是一个指向data page的指针

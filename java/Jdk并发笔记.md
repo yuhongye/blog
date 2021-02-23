@@ -45,6 +45,7 @@
 lock.lock();
 try {
   // 注意这里要使用while，因为被唤醒后，可能会被别的线程先拿到锁往队列里放了value，导致队列又满了
+  // 虽然signal只会唤醒一个等待的线程，但是这个时候可能有别的未阻塞线程来put
   while (isFull()) {
     notFull.await();
   }
