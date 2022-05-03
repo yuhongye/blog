@@ -31,6 +31,54 @@
 
 因此在实现ThreadLocalMap时都不需要同步，因为它只会被一个线程操作。值得注意的一点是：ThreadLocalMap中的Entry是weak reference，当线程dead之后，会被清理掉，也就是ThreadLocal的值不用显式的remove。
 
+#### 3. Executor: 解耦任务的提交和任务的执行
+
+用户无需关注如何创建线程，如何调度线程来执行任务，用户只需提供Runnable对象，将任务的运行逻辑提交到执行器(Executor)中，由Executor框架完成线程的调配和任务的执行部分。
+
+只有一个方法`void execute(Runnable r);`
+
+#### 4. ExecutorService: Executor的子接口，增加了两个能力：
+
+##### 1. 提供了与”终止“相关的方法
+
+一旦调用 shutdown，就不允许再有新的方法提交了，shutdown分两种类型：
+
+1. `shutdown()` 等待已经提交的任务运行完
+2. `shutdownNow()` 已提交未运行的任务不会再运行了，同时会尝试终止已经运行的任务，只是尝试而已不提供保证。它会返回已经提交但是还没运行的任务
+
+两种状态:
+
+1. `isShutdown()` 调用过`shutdown()`就返回`true`
+2. `isTerminated`等所有任务都执行完成后才返回`true`
+
+##### 2. 提供了可以返回Future以追踪执行结果的方法
+
+#### 5. AbstractExecutorService: 提供了默认实现
+
+它的`newTaskFor()`生成`RunnableFuture`，子类可以覆盖`newTaskFor()`方法。
+
+#### 6. ThreadPoolExecutor
+
+根据JavaDoc，披露了如下几点内容。
+
+1. 线程池大小相关的三个参数：core size, max size，queue。 当线程池的线程数量小于core size时，当有任务到来会创新新的线程；当线程数超过core size时，新任务会优先放到 queue 中，如果queue也满了，才会去创新新线程，直到达到 max size 的限制
+2. 如果达到max size 的限制线程池无法提交任务，需要有拒绝策略，拒绝策略是一个接口，可以自定义拒绝策略。JDK提供了4中实现
+   * AbortPolicy: 直接拒绝，抛异常
+   * CallerRunsPolicy: 提交任务的线程来运行
+   * DiscardPolicy: 丢弃这个任务
+   * DiscardOldestPolicy: 丢弃最老的任务，这样就会空出一个位置来防止本任务
+3. queue在这里起着很大作用，也需要根据不同的情况来选用不同的queue:
+   * Direct handoffs，比如使用`SynchronousQueue`，这种情况下queue不提供任务缓冲，一般要求max size要大
+   * Unbounded queue, 比如使用LinkedBlockingQueue，这种情况下max size没有任何作用，线程池的数量只会达到core size
+   * Bounded queue，这种情况下对queue size 和 max size 进行取舍，如果queue size 大 则 cpu压力小，吞吐量小；如果queue size小，则cpu 压力大，上线文切换带来的损耗大。
+4. 这个类提供了两个`protected` hook方法: `beforeExecute` 和 `afterExecute`，通过实现一个子类可以在任务运行前后执行其他逻辑，比如统计、聚合之类的
+5. Keep-alive times，任务繁忙时线程池的数量可能超过 core size，当压力较小时需要把超过的线程释放掉，这个参数就是用来控制这部分线程允许的最大空闲时间。`allowCoreThreadTimeOut(boolean)`可以控制是否要回收core size部分的线程
+6. 预启动。根据之前的描述，只有当新任务来临时才会触发线程创建，这个类提供了两个方法可以预先创建core size 个线程： `prestartCoreThread()`和`preStartAllCoreThreads`。在创建线程池时提供的queue已经包含了若干任务，在这种情况下就有必要预先启动线程来消耗已存在的任务。
+
+
+
+
+
 # Concurrent Collections
 
 #### ArrayBlockingQueue
@@ -176,9 +224,15 @@ Java 7中的实现存在一个问题：限制了最大并发数就是Segments的
 
 在不考虑扩容的情况下，ConcurrentHashMap的细粒度锁应该在桶级别，而不是Table或者Segment级别。如果两个写入操作在两个桶中，那它们完全可以并行去做，只有在同一个桶的时候才需要加锁，而且是加载桶中第一个节点上面，因此插入操作可以总结如下：
 
-1. 如果桶是空的，尝试使用CAS把节点插入到队头，成功则返回，正常情况下桶里的元素应该应该是0或者1
+1. 如果桶是空的，尝试使用CAS把节点插入到队头，成功则返回，90%的情况下桶里的元素应该应该是0或者1
 2. 如果桶不空了，那就锁住队头节点，链表采用尾插法，红黑树正常插入
 
 实现比较精妙的部分是rehash，在插入的时候如果处在rehash的状态，当前线程不是阻塞，而是去帮助rehash操作，大致思路是每个线程分管一部分桶，这样就把rehash也给并行了。
 
 读操作应该是完全并发的，即时在rehash的情况下也不阻塞它。ConcurrentHashMap的桶数是2的次幂，每次扩大一倍，这意味着一个节点在扩容的时候，它要么还在原来的slot上，要么在oldcapacity+slot位置上。据doug lea的注释中说，大概有1/6的entry需要重新构建，其他的可以复用。
+
+为什么TreeBin的搜索比普通的要慢2倍？
+
+
+
+wCP9@SyE
