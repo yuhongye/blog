@@ -11,7 +11,7 @@
 
 #### 1.1 ApplicationContext
 
-Spring 提供了多种 `ApplicationContext` 的实现，在当前最常使用的就是 `AnnotationConfigApplicationContext`, 可以理解成所有的`bean`都是由它来管理的。
+什么是 spring context ?  the place in the app's memory where we add the object instances we want spring to manage。Spring 提供了多种 `ApplicationContext` 的实现，在当前最常使用的就是 `AnnotationConfigApplicationContext`, 可以理解成所有的`bean`都是由它来管理的。
 
 在 Spring 5.0 以后提供了三种方式来把 bean 添加到 spring context 中。
 
@@ -202,4 +202,192 @@ public <T> void registerBean(@Nullable String beanName, Class<T> beanClass,
  HLL from = ctx.getBean(HLL.class);
  System.out.println(from);
 ```
+
+# 2 Wiring Beans
+
+在 defining beans 部分学习了如何定义 bean，在OOP中组合是更推荐的方式，组合意味着一个对象要持有其他的对象。在 spring context 语境下，就是一个 bean 要引用另外一个 bean，如何完成这个引用过程就叫装配，wiring。
+
+### 2.1 wiring的两种方式
+
+这里其实就对应 defining beans 中的两种形式：config class 和 stereotype。其实这两种形式是同一的，都是在spring的管理之下。
+
+#### config class
+
+直接看示例。
+
+```
+// 唯一id
+class ID {
+	private static int nextId = 1;
+	
+	private int id;
+	
+	public ID() {
+		id = nextId++;
+	}
+}
+
+class Person {
+	private ID id;
+	// 省略其他
+}
+
+@Configuration
+class ProjectConfig {
+	
+	@Bean
+	public ID id() {
+		return new ID();
+	}
+	
+	// 代码点1
+	@Bean 
+	Person person() {
+		// 这里会创建一个新的id吗？
+		ID id = id();
+		return new Person(id);
+	}
+	
+	// spring 会从自己的 context 中找到类型为 ID 的 bean 把它传过来
+	@Bean 
+	Person person2(ID id) {
+		return new Person(id);
+	}
+}
+```
+
+在上面的示例中值得关注的是代码点1的部分，它在方法内部调用了 `id()`，这会创建一个新的 `ID`对象吗？在 spring 控制之下的运行不会，spring 会认为你是想要引用 `id` 这个 bean，而不是要去创建一个新的对象，此时有两种情况：
+
+1. context 中已经有这个 bean 了，直接返回 bean 的引用；
+2. context 中没有这个 bean，先在 context 中创建这个 bean, 然后把 bean 的引用返回；
+
+但是如果不是在 spring 的控制之下，那就要遵循 Java 的逻辑：每次方法调用都是一次独立的方法执行，在这里就会创建一个新的ID对象。
+
+```java
+// 实际情况下不可能这么使用
+ProjectConfig config = new ProjectConfig();
+// 创建一个新的 ID 对象
+config.id();
+// 先创建一个新的 ID 对象，然后再创建一个新的 Person 对象
+config.person();
+```
+
+#### Stereotype: 使用 @Autowired 注解
+
+Spring 支持在 3 个地方使用自动注解
+
+##### 1. auto wired by class field(不推荐，经常出现在演示类代码中)
+
+```
+class Person {
+	@Autowired
+	private ID id;
+}
+```
+
+这种形式不推荐，为什么呢？
+
+1. 字段不能被定义为 `final`的
+2. 很难自己去初始化这个类
+
+todo:  Spring 在什么时候完成的字段注入？
+
+##### 2. auto wired by constructor(推荐的方式)
+
+```
+class Person {
+	// Notice: id is final
+	private final ID id;
+	
+	@Autowired
+	public Person(ID id) {
+		this.id = id;
+		do something else...
+	}
+}
+```
+
+这种方式可以克服之前说的确定，并且可以在构造方法中去做其他的事情。这种方式有两点值得注意：
+
+1. 一个类只能有一个构造方法使用 @Autowired 注解
+2. 从 Spring 4.3 开始，如果一个类只有一个构造方法，连@Autowired注解都可以省略
+
+##### 3. Auto wired by setter (不推荐: 缺点多于优点)
+
+```
+class Person {
+	// Notice: id is final
+	private final ID id;
+	
+	@Autowired
+	public void setId(ID id) {
+		this.id = id;
+	}
+}
+```
+
+config class 和 stereotype 两种方式是可以混用的，都是 spring context 管理的 bean。
+
+#### 2.2 同一种类型有多个 bean 是如何选择
+
+有三种方式，优先级依次降低
+
+##### 1. @Qualifier(bean name): 推荐，优先级最高
+
+```
+class HLL {
+	private int p;
+}
+
+// bean 定义
+@Primary
+@Bean
+public HLL hll() { ... }
+
+@Bean
+public HLL hll16() { ... }
+
+@Bean 
+public HLL hll18() { ... }
+
+class HMH {
+	private HLL hll;
+	
+	// 这里注入的是 hll 18
+	@Autowired
+	public HMH(@Qualifier("hll18") hll) {
+		this.hll = hll;
+	}
+}
+```
+
+##### 2. @Primary： 默认选择
+
+```
+bean 定义如上
+
+// 这里注入的是 hll, 因为它是 primary
+@Bean 
+HMH hmh16(HLL hll16) { ... }
+```
+
+##### 3. 参数名称、使用@Autowired的字段名称和 bean name 一致： 不推荐，很容易在对参数重命名时破坏
+
+```
+// bean 定义
+@Bean
+public HLL hll() { ... }
+
+@Bean
+public HLL hll16() { ... }
+
+@Bean 
+public HLL hll18() { ... }
+
+// 这里注入的是 hll16, 没有 primary 的情况下，默认将参数同名bean注入进来
+@Bean 
+HMH hmh16(HLL hll16) { ... }
+```
+
+
 
