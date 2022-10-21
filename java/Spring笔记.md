@@ -2,7 +2,7 @@
 
 # 1 The Spring context: Defining beans
 
-在使用Spring时最重要的是就让Spring去管理 beans，Spring 使用 the context(also known as the application context in spring app) 来管理bean。因此这里就有两件最基本的事情：
+在使用Spring时最重要的是就让Spring去管理 beans，Spring 使用 the context(also known as the application context in spring app) 来管理bean。因此这里就两件最基本的事情：
 
 1. 如何定义bean
 2. 如何把bean加入到 spring context 中，spring context 只有知道了某个 bean 的存在才能去管理它。
@@ -103,7 +103,7 @@ public class ProjectConfig {
 	 }
 	 
 	 /**
-	  * 使用@Bean注解，spring context 就会接管这个bean的创建爱你，spring context 意识到我们需要一个 Integer 类型的 bean,
+	  * 使用@Bean注解，spring context 就会接管这个bean的创建，spring context 意识到我们需要一个 Integer 类型的 bean,
 	  * 它就会去自己的容器里找 Integer 类型的类，如果不发生错误的话就会把它作为参数注入进来, 在这个例子中会把defaultNextId()返回
 	  * 的bean注入进来，因为它是primary
 	  */
