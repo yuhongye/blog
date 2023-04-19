@@ -389,5 +389,14 @@ public HLL hll18() { ... }
 HMH hmh16(HLL hll16) { ... }
 ```
 
+# 3 bean scope
 
+常规 Spring 应用中 bean 的作用域有两种：
+
+1. Singleton(默认的): 每个 bean name 只有一个实例
+2. Prototype: 每次请求 bean 都会创建一个新的实例
+
+### 3.1 singleton
+
+spring 中的 singleton 是跟 bean name 绑定的，不是全局 singleton, 而是一个 bean id 一个实例。
 
