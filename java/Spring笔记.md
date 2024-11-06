@@ -1,6 +1,29 @@
 这篇文档不是一蹴而就的，而是反复迭代，开始时只掌握其最常用、最简单的用法，随着学习的逐步深入，会把有必要的东西不断地补充进来。
 
+
+
 # 1 The Spring context: Defining beans
+
+### IoC
+
+#### 对象绑定方式的角度解释IoC
+
+![对象绑定角度解读Ioc](/Users/caoxiaoyong/Documents/blog/java/images/对象绑定角度解读Ioc.png)
+
+__原来的方式__
+
+【被注入对象】会直接依赖于【被依赖对象】
+
+__使用IoC__
+
+在IoC 场景中两者通过 IoC Service Provider 来打交道，所有【被注入对象】和【被依赖对象】现在都由 IoC Service Provider 统一管理。【被注入对象】需要什么，IoC Service Provider 就会把相应的【被依赖对象】注入到【被注入对象】中。
+
+从【被注入对象】的角度看，与之前直接寻求依赖对象相比，依赖对象的取得方式发生了反转，控制权也从【被注入对象】转到了 IoC Service Provider 那里。
+
+#### IoC Service Provider的职责
+
+1. __业务对象的构建管理__: 在 IoC 场景中，业务对象无需关心所依赖的对象如何构建、如何获取，但是这部分工作始终需要有人做。所以，IoC Service Provider 需要将对象的构建逻辑从客户端那里剥离出来，以免这部分逻辑污染业务对象的实现。
+2. __业务对象间的依赖绑定__: IoC Service Provider 通过结合它所构建和管理的全部业务对象，以及各个业务对象间可以识别的依赖关系，将这些对象所依赖的对象注入绑定，从而保证每个业务对象在使用的时候都处于就绪状态。
 
 在使用Spring时最重要的是就让Spring去管理 beans，Spring 使用 the context(also known as the application context in spring app) 来管理bean。因此这里就两件最基本的事情：
 
@@ -126,7 +149,7 @@ public class ProjectConfig {
 
 使用注解来添加 bean 也需要 spring context 知道两件事：
 
-1. 哪些类需要作为 bean 来添加：使用 `@component` 注解告诉 spring context 初始化这个类的实例，并把它作为 bean 管理起来
+1. 哪些类需要作为 bean 来添加：使用 `@Component` 注解告诉 spring context 初始化这个类的实例，并把它作为 bean 管理起来
 2. 需要知道扫描哪些包来自动生成bean，因为不能把全部的包都扫描了，这样性能会慢更重要的是会带来逻辑问题：使用 `@ComponentScan` 来告诉扫描的包名。注意：这个注解是用在 Config Class 身上的
 
 ```
@@ -389,8 +412,40 @@ public HLL hll18() { ... }
 HMH hmh16(HLL hll16) { ... }
 ```
 
-# 3 bean scope
+# 2 AOP
 
+Spring AOP 中的 `target object` 必须得是 Spring bean，也就是 Spring 必须得管理它, AOP才能生效。下面的图很形象的展示了 Spring AOP 中的各个概念
+
+<img src="/Users/caoxiaoyong/Documents/blog/java/images/spring-aop-overview.png" alt="Spring AOP Demo" style="zoom:30%;" />
+
+Spring是怎么实现AOP的呢？它通过代理模式生成原来 bean 的代理对象，在代理对象上面去包装切面逻辑。也就是说，如果一个 bean 应用了 AOP，那么在通过 Spring 获取 bean 的实例时，得到的就不是原生的对象了，而是 Spring AOP 生成的代理对象，Spring AOP 的原理如下:
+
+```java
+class ServiceProxy extends Service {
+  private Service realService;
+  
+  @Ovverride
+  public void process() {
+    try {
+      // before：可织入切面 
+      do some logic;
+      // 执行真正的业务逻辑
+      realService.process();
+      // after: 可以织入切面
+      do some logic;
+    } catch(Exception e) {
+      // 异常：可以织入切面
+      do some logic;
+    }
+  }
+}
+```
+
+<img src="/Users/caoxiaoyong/Documents/blog/java/images/spring-aop-proxy-object.png" alt="spring aop generated proxy object" style="zoom:40%;" />
+
+<img src="/Users/caoxiaoyong/Documents/blog/java/images/spring-aop-compare.png" alt="compare use spring aop or not" style="zoom:40%;" />
+
+# 3 bean scope
 常规 Spring 应用中 bean 的作用域有两种：
 
 1. Singleton(默认的): 每个 bean name 只有一个实例
